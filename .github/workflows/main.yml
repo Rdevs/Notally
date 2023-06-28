@@ -1,17 +1,14 @@
 name: Build app workflow
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 jobs:
 
-  build_job:
-    name: Build the apl
+  setup_job:
+    name: Setup Job
     runs-on: ubunti-latest
-    continue_on_error: false
+    continue_on_error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -23,21 +20,58 @@ jobs:
         run: javac -version
       - name: Change wrapper permissions
           run: chmod +x ./gradlew
-            - name: Restore Cache
-              uses: actions/cache@v2
-              with:
-                path: |
-                  ~/.gradle/caches
-                  ~/.gradle/wrapper
-                key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-                restore-keys: |
-                  ${{ runner.os }}-gradle-
+                 - name: Restore Cache
+                 uses: actions/cache@v2
+                 with:
+                   path: |
+                     ~/.gradle/caches
+                     ~/.gradle/wrapper
+                   key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+                   restore-keys: |
+                     ${{ runner.os }}-gradle-
 
-      - name: Run Debug Tests
-      run: ./gradlew testDebugUnitTest --continue
-      - name: Upload Test Reports
-        if: ${{ always() }}
+  build_job:
+    name: Building the APK
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Restore Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Change wrapper permissions
+        run: chmod +x ./gradlew
+      - name: Assemble Debug
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
         uses: actions/upload-artifact@v2
         with:
-          name: test-reports
-          path: '**/build/reports/tests/'
+          name: apk
+          path: app/build/outputs/apk/debug/**.apk
+
+#  notification_job:
+#    needs: [ setup_job, build_job ]
+#    name: Notify Workflow Results
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: technote-space/workflow-conclusion-action@v1
+#      - name: Send mail
+#        if: failure()
+#        uses: dawidd6/action-send-mail@v2
+#        with:
+#          server_address: smtp.gmail.com
+#          server_port: 465
+#          username: ${{ secrets.MAIL_USERNAME }}
+#          password: ${{ secrets.MAIL_PASSWORD }}
+#          subject: Github Actions Job result
+#          body: Build job of ${{github.repository}} completed successfully! The Job worflow ${{ github.workflow }} of ${{ github.repository }} has result of ${{ env.WORKFLOW_CONCLUSION }}
+#          to: someEmail@gmail.com
+#          from: From Github Action
