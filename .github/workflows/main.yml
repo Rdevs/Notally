@@ -1,14 +1,16 @@
 name: Build app workflow
 
 on:
+  push:
+    tags: 'v*'
   workflow_dispatch:
 
 jobs:
 
   setup_job:
     name: Setup Job
-    runs-on: ubunti-latest
-    continue_on_error: true
+    runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -19,16 +21,16 @@ jobs:
       - name: Print Java version
         run: javac -version
       - name: Change wrapper permissions
-          run: chmod +x ./gradlew
-                 - name: Restore Cache
-                 uses: actions/cache@v2
-                 with:
+        run: chmod +x ./gradlew
+      - name: Restore Cache
+        uses: actions/cache@v2
+        with:
                    path: |
                      ~/.gradle/caches
                      ~/.gradle/wrapper
                    key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
                    restore-keys: |
-                     ${{ runner.os }}-gradle-
+                     ${{ runner.os }}-gradle-       
 
   build_job:
     name: Building the APK
