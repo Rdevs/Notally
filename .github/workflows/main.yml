@@ -7,73 +7,49 @@ on:
 
 jobs:
 
-  setup_job:
-    name: Setup Job
+  build:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Decode Keystore
+        id: decode_keystore
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: 'keystore/notally_jks'
+          encodedString: ${{ secrets.NOTALLY_KEYSTORE }}
+      - uses: actions/checkout@v2
+
       - name: Setup JDK 11
         uses: actions/setup-java@v1
         with:
           java-version: 11
-      - name: Print Java version
-        run: javac -version
-      - name: Change wrapper permissions
+
+      - name: Make gradlew executable
         run: chmod +x ./gradlew
-      - name: Restore Cache
-        uses: actions/cache@v2
-        with:
-                   path: |
-                     ~/.gradle/caches
-                     ~/.gradle/wrapper
-                   key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-                   restore-keys: |
-                     ${{ runner.os }}-gradle-       
 
-  build_job:
-    name: Building the APK
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Restore Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      - name: Change wrapper permissions
-        run: chmod +x ./gradlew
-      - name: Assemble Debug
-        run: ./gradlew assembleDebug
+      - name: build Release AAB
+        run: ./gradlew app:bundleRelease
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASS }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASS }}
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v2
+      - name: Build Universal APK
+        uses: skywall/universal-apk-builder@v1.0.1
         with:
-          name: apk
-          path: app/build/outputs/apk/debug/**.apk
+          aab_path: "app/release/app-release.aab"
+          keystore_path: "keystore/notally_jks"
+          keystore_password: ${{secrets.KEY_STORE_PASS}}
+          keystore_alias: ${{secrets.KEY_ALIAS}}
+          keystore_alias_password: ${{secrets.KEY_PASS}}
 
-#  notification_job:
-#    needs: [ setup_job, build_job ]
-#    name: Notify Workflow Results
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: technote-space/workflow-conclusion-action@v1
-#      - name: Send mail
-#        if: failure()
-#        uses: dawidd6/action-send-mail@v2
-#        with:
-#          server_address: smtp.gmail.com
-#          server_port: 465
-#          username: ${{ secrets.MAIL_USERNAME }}
-#          password: ${{ secrets.MAIL_PASSWORD }}
-#          subject: Github Actions Job result
-#          body: Build job of ${{github.repository}} completed successfully! The Job worflow ${{ github.workflow }} of ${{ github.repository }} has result of ${{ env.WORKFLOW_CONCLUSION }}
-#          to: someEmail@gmail.com
-#          from: From Github Action
+      - name: Do something with Universal APK
+        with:
+          apk_path: ${{env.UNIVERSAL_APK_PATH}}
+
+      - name: upload artifact to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+            appId: ${{secrets.FB_APP_ID}}
+            serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
+            groups: QA
+            file: ${{env.UNIVERSAL_APK_PATH}}
