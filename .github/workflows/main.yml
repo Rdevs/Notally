@@ -1,6 +1,8 @@
 name: Build app workflow
 
 on:
+  push:
+    tags: 'v*'
   workflow_dispatch:
 
 jobs:
