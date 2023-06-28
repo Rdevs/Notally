@@ -17,22 +17,18 @@ jobs:
           fileName: 'keystore/notally_jks'
           encodedString: ${{ secrets.NOTALLY_KEYSTORE }}
       - uses: actions/checkout@v2
-
       - name: Setup JDK 11
         uses: actions/setup-java@v1
         with:
           java-version: 11
-
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-
       - name: build Release AAB
         run: ./gradlew app:bundleRelease
         env:
           SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASS }}
           SIGNING_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASS }}
-
       - name: Build Universal APK
         uses: skywall/universal-apk-builder@v1.0.1
         with:
@@ -41,11 +37,9 @@ jobs:
           keystore_password: ${{secrets.KEY_STORE_PASS}}
           keystore_alias: ${{secrets.KEY_ALIAS}}
           keystore_alias_password: ${{secrets.KEY_PASS}}
-
       - name: Do something with Universal APK
         with:
           apk_path: ${{env.UNIVERSAL_APK_PATH}}
-
       - name: upload artifact to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
