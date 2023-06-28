@@ -37,9 +37,6 @@ jobs:
           keystore_password: ${{secrets.KEY_STORE_PASS}}
           keystore_alias: ${{secrets.KEY_ALIAS}}
           keystore_alias_password: ${{secrets.KEY_PASS}}
-      - name: Do something with Universal APK
-        with:
-          apk_path: ${{env.UNIVERSAL_APK_PATH}}
       - name: upload artifact to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
