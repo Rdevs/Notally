@@ -10,7 +10,7 @@ android {
     namespace "com.omgodse.notally"
 
     defaultConfig {
-        applicationId "com.omgodse.notally"
+        applicationId "com.rk.notally"
         minSdk 21
         targetSdk 32
         versionCode 47
