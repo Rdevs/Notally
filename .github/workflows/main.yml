@@ -14,7 +14,7 @@ jobs:
         id: decode_keystore
         uses: timheuer/base64-to-file@v1
         with:
-          fileName: 'keystore/notally_jks'
+          fileName: 'keystore/notally_jks.jks'
           encodedString: ${{ secrets.NOTALLY_KEYSTORE }}
       - uses: actions/checkout@v2
       - name: Setup JDK 11
@@ -33,7 +33,7 @@ jobs:
         uses: skywall/universal-apk-builder@v1.0.1
         with:
           aab_path: "app/release/app-release.aab"
-          keystore_path: "keystore/notally_jks"
+          keystore_path: "keystore/notally_jks.jks"
           keystore_password: ${{secrets.KEY_STORE_PASS}}
           keystore_alias: ${{secrets.KEY_ALIAS}}
           keystore_alias_password: ${{secrets.KEY_PASS}}
